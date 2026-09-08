@@ -1,4 +1,15 @@
+use std::thread;
 use std::time::Duration;
+
+fn cpu_slow(name: &str, ms: u64) {
+    thread::sleep(Duration::from_millis(ms));
+    println!("Calculated '{name}' in {ms}ms.");
+}
+
+async fn io_slow(name: &str, ms: u64) {
+    trpl::sleep(Duration::from_millis(ms)).await;
+    println!("Wrote to disk '{name}' in {ms}ms.");
+}
 
 fn main() {
     let (tx, mut rx) = trpl::channel();
