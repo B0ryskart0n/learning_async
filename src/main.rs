@@ -2,6 +2,8 @@ use std::time::Duration;
 
 fn main() {
     let (tx, mut rx) = trpl::channel();
+    // The `move` moves the `tx` ownership, so it gets dropped after finishing sending.
+    // This makes the `rx` return `None` because senders are closed.
     let tx_fut = async move {
         let vals = vec![
             String::from("hi"),
