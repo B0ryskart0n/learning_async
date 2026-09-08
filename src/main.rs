@@ -1,31 +1,26 @@
-use trpl::Either;
-use trpl::Html;
-
-/// Equivalent to `fn page_title(INPUT) -> impl Future<Output = OUTPUT> { async move { BODY }}`
-async fn page_title(url: &str) -> (&str, Option<String>) {
-    let response_text = trpl::get(url).await.text().await;
-    let title = Html::parse(&response_text)
-        .select_first("title")
-        .map(|title| title.inner_html());
-    (url, title)
-}
+use std::time::Duration;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let (tx, mut rx) = trpl::channel();
+    let tx_fut = async move {
+        let vals = vec![
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("future"),
+        ];
 
-    trpl::block_on(async {
-        let title_fut_1 = page_title(&args[1]);
-        let title_fut_2 = page_title(&args[2]);
-
-        let (url, maybe_title) = match trpl::select(title_fut_1, title_fut_2).await {
-            Either::Left(left) => left,
-            Either::Right(right) => right,
-        };
-
-        println!("{url} returned first");
-        match maybe_title {
-            Some(title) => println!("Its page title was: '{title}'"),
-            None => println!("It had no title."),
+        for val in vals {
+            trpl::sleep(Duration::from_millis(500)).await;
+            tx.send(val).unwrap();
         }
-    })
+    };
+
+    let rx_fut = async {
+        while let Some(value) = rx.recv().await {
+            println!("received '{value}'");
+        }
+    };
+
+    trpl::block_on(trpl::join(tx_fut, rx_fut));
 }
