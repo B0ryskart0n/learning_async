@@ -1,23 +1,12 @@
-use std::time::Duration;
+use trpl::Html;
 
-fn main() {
-    trpl::block_on(async {
-        let (tx, mut rx) = trpl::channel();
-
-        let vals = vec![
-            String::from("hi"),
-            String::from("from"),
-            String::from("the"),
-            String::from("future"),
-        ];
-
-        for val in vals {
-            tx.send(val).unwrap();
-            trpl::sleep(Duration::from_millis(500)).await;
-        }
-
-        while let Some(value) = rx.recv().await {
-            println!("received '{value}'");
-        }
-    });
+/// Equivalent to `fn page_title(url: &str) -> impl Future<Output = Option<String>> { async move { BODY }}`
+async fn page_title(url: &str) -> Option<String> {
+    let response = trpl::get(url).await;
+    let response_text = response.text().await;
+    Html::parse(&response_text)
+        .select_first("title")
+        .map(|title| title.inner_html())
 }
+
+fn main() {}
