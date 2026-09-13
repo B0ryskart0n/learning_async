@@ -12,6 +12,7 @@ impl Future for Ready {
     }
 }
 
+#[derive(Default)]
 pub struct AlmostReady {
     ready: bool,
 }
