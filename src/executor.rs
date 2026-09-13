@@ -1,3 +1,3 @@
-pub fn wait_for<T: Future>(future: T) -> T::Output {
+pub fn wait_for<T: Future>(_future: T) -> T::Output {
     todo!()
 }
