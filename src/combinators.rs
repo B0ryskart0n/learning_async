@@ -3,18 +3,19 @@ use std::{
     task::{Context, Poll},
 };
 
+pub fn or<F1: Future, F2: Future>(
+    f1: F1,
+    f2: F2,
+) -> impl Future<Output = Either<F1::Output, F2::Output>> {
+    Or {
+        f1: Box::pin(f1),
+        f2: Box::pin(f2),
+    }
+}
 // TODO Could be leveraged to not have Pinned Boxed Futures, but rather the Futures be part of the struct.
-pub struct Or<F1: Future, F2: Future> {
+struct Or<F1: Future, F2: Future> {
     f1: Pin<Box<F1>>,
     f2: Pin<Box<F2>>,
-}
-impl<F1: Future, F2: Future> Or<F1, F2> {
-    pub fn new(f1: F1, f2: F2) -> Or<F1, F2> {
-        Or {
-            f1: Box::pin(f1),
-            f2: Box::pin(f2),
-        }
-    }
 }
 impl<F1: Future, F2: Future> Future for Or<F1, F2> {
     type Output = Either<F1::Output, F2::Output>;
