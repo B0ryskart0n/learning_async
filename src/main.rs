@@ -2,9 +2,13 @@
 
 use learning_async::basic_futures::AlmostReady;
 use learning_async::basic_futures::Ready;
+use learning_async::combinators::and;
 use learning_async::combinators::or;
 use learning_async::executor::wait_for;
 
 fn main() {
-    wait_for(or(AlmostReady::default(), Ready));
+    wait_for(and(
+        AlmostReady::default(),
+        or(Ready, AlmostReady::default()),
+    ));
 }
