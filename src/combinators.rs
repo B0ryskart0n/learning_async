@@ -34,13 +34,13 @@ where
     type Output = Both<F1::Output, F2::Output>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // Relies on fields being `Unpin`, which is true if `F1::Output` is `Unpin`.
-        let this = self.get_mut();
-
         // Prevent the executor from polling the underlying futures again, which could panic.
-        if this.already_returned {
+        if self.already_returned {
             return Poll::Pending;
         }
+
+        // Relies on fields being `Unpin`, which is true if `F1::Output` is `Unpin`.
+        let this = self.get_mut();
 
         if this.f1_return.is_none() {
             let pinned_f1 = Pin::as_mut(&mut this.f1);
@@ -77,12 +77,14 @@ pub fn or<F1: Future, F2: Future>(
     Or {
         f1: Box::pin(f1),
         f2: Box::pin(f2),
+        already_returned: false,
     }
 }
 // TODO Could be leveraged to not have Pinned Boxed Futures, but rather the Futures be part of the struct.
 struct Or<F1: Future, F2: Future> {
     f1: Pin<Box<F1>>,
     f2: Pin<Box<F2>>,
+    already_returned: bool,
 }
 impl<F1: Future, F2: Future> Future for Or<F1, F2> {
     type Output = Either<F1::Output, F2::Output>;
@@ -90,6 +92,11 @@ impl<F1: Future, F2: Future> Future for Or<F1, F2> {
     // TODO Fuse (nothing prevents from calling poll after returning Ready, which can panic)
     // Biased towards F1
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        // Prevent the executor from polling the underlying futures again, which could panic.
+        if self.already_returned {
+            return Poll::Pending;
+        }
+
         // Moving out of the Pin is possible because Self is Unpin.
         // Otherwise moving out of the Pin violates the invariant of not moving.
         let this: &mut Self = self.get_mut();
